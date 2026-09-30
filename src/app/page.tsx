@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 
-type RecordItem = { id: string; num1: number; num2: number; num3: number; createdAt: string }
+type RecordItem = { id: string; roundNo?: string; num1: number; num2: number; num3: number; createdAt: string }
 type Digits = [number, number, number]
 type CandidateColumns = { first: number[]; second: number[]; third: number[] }
 const STORAGE_KEY = 'coze-number-round-records-v1'
+const PAGE_SIZE = 10
 
 type DigitField = keyof Pick<RecordItem, 'num1' | 'num2' | 'num3'>
 
@@ -46,16 +47,15 @@ export default function HomePage() {
   const [candidates, setCandidates] = useState<CandidateColumns>({ first: [], second: [], third: [] })
   const [reference, setReference] = useState<Digits | null>(null)
   const [updatedAt, setUpdatedAt] = useState('')
+  const [historyPage, setHistoryPage] = useState(1)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingDigits, setEditingDigits] = useState<Digits>([0, 0, 0])
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     if (!saved) return
     try { setRecords(JSON.parse(saved) as RecordItem[]) } catch { window.localStorage.removeItem(STORAGE_KEY) }
   }, [])
-
-  useEffect(() => {
-    if (records.length > 0) refreshRecommendations(records, amount)
-  }, [records, amount])
 
   function refreshRecommendations(source = records, candidateAmount = amount): void {
     const nextCandidates = {
@@ -71,13 +71,39 @@ export default function HomePage() {
 
   function saveRecord(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault()
-    const next = [{ id: crypto.randomUUID(), num1: form[0], num2: form[1], num3: form[2], createdAt: new Date().toLocaleString('zh-CN') }, ...records]
+    const now = new Date()
+    const roundNo = `R${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    const next = [{ id: crypto.randomUUID(), roundNo, num1: form[0], num2: form[1], num3: form[2], createdAt: now.toLocaleString('zh-CN') }, ...records]
     setRecords(next)
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    setHistoryPage(1)
+  }
+
+  function updateEditDigit(index: number, value: number): void {
+    const next = [...editingDigits] as Digits
+    next[index] = Math.min(9, Math.max(0, value))
+    setEditingDigits(next)
+  }
+
+  function saveEdit(recordId: string): void {
+    const next = records.map((record) => record.id === recordId ? { ...record, num1: editingDigits[0], num2: editingDigits[1], num3: editingDigits[2] } : record)
+    setRecords(next)
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    setEditingId(null)
+  }
+
+  function deleteRecord(recordId: string): void {
+    if (!window.confirm('确定删除这条记录吗？')) return
+    const next = records.filter((record) => record.id !== recordId)
+    setRecords(next)
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    setHistoryPage(Math.min(historyPage, Math.max(1, Math.ceil(next.length / PAGE_SIZE))))
   }
 
   const sum = reference ? reference.reduce((total, digit) => total + digit, 0) : '--'
   const columns = [{ label: '第一位置', digits: candidates.first }, { label: '第二位置', digits: candidates.second }, { label: '第三位置', digits: candidates.third }]
+  const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE))
+  const pageRecords = records.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE)
 
   return <main className="app-shell">
     <header><strong>中奖 2.0版本</strong><span>Coze Coding · Next.js</span></header>
@@ -104,6 +130,20 @@ export default function HomePage() {
       <div className="candidate-grid">{columns.map((column) => <div className="candidate-column" key={column.label}><h3>{column.label}</h3><div>{column.digits.map((digit, index) => <span key={digit}><i>{index + 1}</i>{digit}</span>)}</div></div>)}</div>
     </section>
 
-    <section className="card"><h2>最近记录</h2><div className="history">{records.slice(0, 10).map((record) => <div key={record.id}>{record.num1} · {record.num2} · {record.num3}<small>合值 {record.num1 + record.num2 + record.num3} · {record.createdAt}</small></div>)}{records.length === 0 && <p className="empty">暂无记录</p>}</div></section>
+    <section className="card history-card">
+      <div className="section-head"><div><h2>回合历史记录</h2><p>共 {records.length} 条，支持编辑与删除</p></div></div>
+      {records.length === 0 ? <p className="empty">暂无记录</p> : <>
+        <div className="table-wrap"><table><thead><tr><th>回合编号</th><th>第一位置</th><th>第二位置</th><th>第三位置</th><th>总和</th><th>录入时间</th><th>操作</th></tr></thead>
+          <tbody>{pageRecords.map((record) => {
+            const editing = editingId === record.id
+            const digits = [record.num1, record.num2, record.num3]
+            return <tr key={record.id}><td>{record.roundNo ?? record.id.slice(0, 8)}</td>
+              {digits.map((digit, index) => <td key={index}>{editing ? <input aria-label={`编辑第${index + 1}位`} type="number" min="0" max="9" value={editingDigits[index]} onChange={(event) => updateEditDigit(index, Number(event.target.value))} /> : <span className="digit-cell">{digit}</span>}</td>)}
+              <td className="sum-cell">{editing ? editingDigits.reduce((total, digit) => total + digit, 0) : record.num1 + record.num2 + record.num3}</td><td>{record.createdAt}</td>
+              <td className="record-actions">{editing ? <><button onClick={() => saveEdit(record.id)}>保存</button><button className="secondary" onClick={() => setEditingId(null)}>取消</button></> : <><button onClick={() => { setEditingId(record.id); setEditingDigits([record.num1, record.num2, record.num3]) }}>编辑</button><button className="danger" onClick={() => deleteRecord(record.id)}>删除</button></>}</td></tr>
+          })}</tbody></table></div>
+        <nav className="pagination" aria-label="历史记录分页"><span>共 {records.length} 条</span><button className="secondary" disabled={historyPage === 1} onClick={() => setHistoryPage(historyPage - 1)}>上一页</button><span>{historyPage} / {totalPages}</span><button className="secondary" disabled={historyPage === totalPages} onClick={() => setHistoryPage(historyPage + 1)}>下一页</button></nav>
+      </>}
+    </section>
   </main>
 }
