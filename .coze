@@ -1,0 +1,32 @@
+[project]
+entrypoint = "index.html"
+requires = [ "nodejs-24" ]
+template = "vite"
+version = "legacy"
+appliedPatches = [ "vite/validate@0.0.20" ]
+
+[dev]
+build = [
+  "bash",
+  "-c",
+  "pnpm install && pip3 install --break-system-packages -q -r backend/requirements.txt"
+]
+run = [
+  "bash",
+  "-c",
+  "exec pnpm run dev"
+]
+validate = [ "bash", "./scripts/validate.sh" ]
+
+[deploy]
+build = [
+  "bash",
+  "-c",
+  "pnpm install && pnpm run build && pip3 install --break-system-packages -q -r backend/requirements.txt"
+]
+run = [
+  "sh",
+  "-c",
+  "python3 -m uvicorn backend.main:app --host 0.0.0.0 --port ${DEPLOY_RUN_PORT:-5000}"
+]
+

@@ -1,0 +1,121 @@
+/* ============================================
+   WPS 表格风格全局样式（数字回合统计小游戏）
+   白底细线办公表格气质 + 品牌红点缀
+   ============================================ */
+:root {
+  /* 品牌红（仅用于主按钮/活动标签/推荐高亮） */
+  --wps-red: #d5412d;
+  --wps-red-hover: #e2573f;
+  --wps-red-deep: #aa3424;
+  --wps-red-bg: #fdf3f1;
+  --wps-red-border: #f0cfc8;
+
+  /* 表格纸面与网格 */
+  --wps-bg: #f7f8fa;
+  --wps-paper: #ffffff;
+  --wps-border: #d9d9d9;
+  --wps-border-light: #e6e6e6;
+  --wps-head-bg: #f5f6f7;
+  --wps-row-head-bg: #f0f0f0;
+  --wps-row-head-text: #666666;
+
+  /* 文字 */
+  --wps-text: #333333;
+  --wps-text-2: #555555;
+  --wps-text-3: #888888;
+
+  /* 表格绿（总和/成功态点缀） */
+  --wps-green: #1e7145;
+  --wps-green-bg: #eef6f1;
+
+  /* Element Plus 主色覆盖为品牌红 */
+  --el-color-primary: #d5412d;
+  --el-color-primary-light-3: #dd6a52;
+  --el-color-primary-light-5: #e68f78;
+  --el-color-primary-light-7: #eeb5a4;
+  --el-color-primary-light-8: #f2cabb;
+  --el-color-primary-light-9: #f9e5dd;
+  --el-color-primary-dark-2: #aa3424;
+
+  --wps-radius: 4px;
+  --wps-radius-card: 6px;
+  --wps-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --wps-font-num: Consolas, Menlo, 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--wps-bg);
+  color: var(--wps-text);
+  font-family: system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--wps-red-bg);
+}
+
+/* ---------- Element Plus 细节贴合 WPS 气质 ---------- */
+.el-table {
+  --el-table-border-color: var(--wps-border-light);
+  --el-table-header-bg-color: var(--wps-head-bg);
+  --el-table-header-text-color: var(--wps-text);
+  --el-table-row-hover-bg-color: var(--wps-red-bg);
+  --el-table-tr-bg-color: var(--wps-paper);
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.el-button {
+  border-radius: var(--wps-radius);
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-input-number {
+  border-radius: var(--wps-radius);
+}
+
+.el-pagination {
+  --el-pagination-border-radius: var(--wps-radius);
+}
+
+/* 数字等宽展示 */
+.num-font {
+  font-family: var(--wps-font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 滚动条贴合办公风格 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9c9c9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ababab;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
