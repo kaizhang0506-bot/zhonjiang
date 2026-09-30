@@ -80,7 +80,7 @@ export default function HomePage() {
   const columns = [{ label: '第一位置', digits: candidates.first }, { label: '第二位置', digits: candidates.second }, { label: '第三位置', digits: candidates.third }]
 
   return <main className="app-shell">
-    <header><strong>数字回合参考</strong><span>Coze Coding · Next.js</span></header>
+    <header><strong>中奖 2.0版本</strong><span>Coze Coding · Next.js</span></header>
     <section className="card">
       <h1>数字录入</h1>
       <form onSubmit={saveRecord} className="entry-form">
