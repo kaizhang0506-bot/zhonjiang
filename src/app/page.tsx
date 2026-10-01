@@ -7,6 +7,7 @@ type Digits = [number, number, number]
 type CandidateColumns = { first: number[]; second: number[]; third: number[] }
 const STORAGE_KEY = 'coze-number-round-records-v1'
 const PAGE_SIZE = 10
+const EXPIRES_AT = new Date('2026-10-31T23:59:59+08:00').getTime()
 
 type DigitField = keyof Pick<RecordItem, 'num1' | 'num2' | 'num3'>
 
@@ -40,6 +41,14 @@ function drawReference(candidates: CandidateColumns, hasRecords: boolean): Digit
   }) as Digits
 }
 
+function formatRemaining(milliseconds: number): string {
+  const totalMinutes = Math.max(0, Math.floor(milliseconds / 60_000))
+  const days = Math.floor(totalMinutes / 1_440)
+  const hours = Math.floor((totalMinutes % 1_440) / 60)
+  const minutes = totalMinutes % 60
+  return `${days} 天 ${hours} 小时 ${minutes} 分钟`
+}
+
 export default function HomePage() {
   const [records, setRecords] = useState<RecordItem[]>([])
   const [form, setForm] = useState<Digits>([0, 0, 0])
@@ -50,11 +59,19 @@ export default function HomePage() {
   const [historyPage, setHistoryPage] = useState(1)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingDigits, setEditingDigits] = useState<Digits>([0, 0, 0])
+  const [now, setNow] = useState(0)
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     if (!saved) return
     try { setRecords(JSON.parse(saved) as RecordItem[]) } catch { window.localStorage.removeItem(STORAGE_KEY) }
+  }, [])
+
+  useEffect(() => {
+    const updateTime = () => setNow(Date.now())
+    updateTime()
+    const timer = window.setInterval(updateTime, 60_000)
+    return () => window.clearInterval(timer)
   }, [])
 
   function refreshRecommendations(source = records, candidateAmount = amount): void {
@@ -104,9 +121,14 @@ export default function HomePage() {
   const columns = [{ label: '第一位置', digits: candidates.first }, { label: '第二位置', digits: candidates.second }, { label: '第三位置', digits: candidates.third }]
   const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE))
   const pageRecords = records.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE)
+  const remaining = EXPIRES_AT - now
+
+  if (now > 0 && remaining <= 0) {
+    return <main className="expired-shell"><section className="expired-card"><span>使用期限结束</span><h1>模型已过期</h1><p>当前版本的 30 天使用期限已结束，请充值后获取续期版本。</p></section></main>
+  }
 
   return <main className="app-shell">
-    <header><strong>中奖 2.0版本</strong><span>Coze Coding · Next.js</span></header>
+    <header><strong>中奖 2.0版本</strong><span>剩余 {formatRemaining(remaining)} · Coze Coding</span></header>
     <section className="card">
       <h1>数字录入</h1>
       <form onSubmit={saveRecord} className="entry-form">
